@@ -12,5 +12,3 @@ def read_fits(fits_file,ext=0):
     hdulist.close()
 
     return img_data, img_header
-
-

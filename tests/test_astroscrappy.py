@@ -4,7 +4,7 @@ from astropy.io import fits
 from kpf_cosmic_rays.paths import DATADIR, RESULTSDIR
 from kpf_cosmic_rays.plotting import plot_dark, plot_kpf_L0
 
-include_bias = 1
+include_bias = 0
 do_darks = 1
 do_SoCal = 0
 do_LFC = 0
