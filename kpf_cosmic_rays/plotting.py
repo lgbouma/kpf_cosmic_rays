@@ -17,7 +17,7 @@ from itertools import product
 from matplotlib import patches
 
 from kpf_cosmic_rays.helpers import read_fits
-from kpf_cosmic_rays.paths import RESULTSDIR
+from kpf_cosmic_rays.paths import RESULTSDIR, DATADIR
 
 from aesthetic.plot import savefig, format_ax, set_style
 
@@ -52,6 +52,9 @@ def plot_dark(darkpath, biaspath=None, get_cosmics=0):
         """
     )
 
+    cr_dict = {}
+
+    print(outname+'...')
     for ix, amp_name in enumerate(amp_names):
 
         ax = axd[str(ix)]
@@ -92,15 +95,24 @@ def plot_dark(darkpath, biaspath=None, get_cosmics=0):
                 int(np.nanpercentile(img, 1)), int(np.nanpercentile(img, 99))
             )
             norm = colors.Normalize(vmin=vmin, vmax=vmax)
-            cset = ax.imshow(img.astype(int), cmap='binary_r', norm=norm, origin='lower',
-                             interpolation='none')
+            cset = ax.imshow(img.astype(int), cmap='binary_r', norm=norm,
+                             origin='lower', interpolation='none')
         elif get_cosmics:
             vmin, vmax = 0, 1
             norm = colors.Normalize(vmin=vmin, vmax=vmax)
             cset = ax.imshow(crmask.astype(int), cmap='binary', origin='lower',
-                            interpolation='none')
+                             interpolation='none')
 
             assert np.all(np.unique(crmask.astype(int)) == np.array([0,1]))
+
+            cr_dict[f'{amp_name}_img'] = img
+            cr_dict[f'{amp_name}_crmask'] = crmask
+
+            N_px = crmask.shape[0] * crmask.shape[1]
+            N_cr_px = np.sum(crmask)
+            frac = 100 * N_cr_px / N_px
+            msg = f"{amp_name}: {N_cr_px}/{N_px} CR/total.  Frac {frac:.3f}%."
+            print(msg)
 
         ax.set_title(amp_name)
 
@@ -116,6 +128,15 @@ def plot_dark(darkpath, biaspath=None, get_cosmics=0):
 
         cb.ax.tick_params(direction='in')
         cb.ax.tick_params(labelsize='xx-small')
+
+    if get_cosmics:
+        outname = f'crcache_{outname}{s.replace("_cosmicmask","")}.pkl'
+        outdir = os.path.join(DATADIR, 'cr_cache')
+        if not os.path.exists(outdir): os.mkdir(outdir)
+        outpklpath = os.path.join(outdir, outname)
+        with open(outpklpath, 'wb') as f:
+            pickle.dump(cr_dict, f)
+        print(f"Wrote {outpklpath}")
 
     fig.text(-0.01,0.5, 'CCD Column', va='center', rotation=90)
     fig.text(0.5,-0.01, 'CCD Row', ha='center')
